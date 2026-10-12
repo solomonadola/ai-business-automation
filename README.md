@@ -159,15 +159,15 @@ Example request:
 
 Tasks:
 
-- [ ] Define the lead data model.
-- [ ] Create request validation schemas.
-- [ ] Validate email format and required fields.
-- [ ] Enforce sensible field-length limits.
-- [ ] Normalize appropriate fields.
-- [ ] Return consistent success and error responses.
-- [ ] Add unit tests for validation.
-- [ ] Add API tests for valid and invalid requests.
-- [ ] Separate HTTP handling from business logic.
+- [x] Define the lead data model.
+- [x] Create request validation schemas.
+- [x] Validate email format and required fields.
+- [x] Enforce sensible field-length limits.
+- [x] Normalize appropriate fields.
+- [x] Return consistent success and error responses.
+- [x] Add unit tests for validation.
+- [x] Add API tests for valid and invalid requests.
+- [x] Separate HTTP handling from business logic.
 
 **Acceptance criteria:**
 
