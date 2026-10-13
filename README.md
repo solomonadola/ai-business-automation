@@ -265,15 +265,15 @@ A lead can complete the workflow. Transient failures can be retried safely, and 
 
 Tasks:
 
-- [ ] Run n8n locally.
-- [ ] Design the workflow boundaries.
-- [ ] Connect n8n to the backend using authenticated webhooks.
-- [ ] Validate every incoming webhook payload.
-- [ ] Handle duplicate deliveries.
-- [ ] Store credentials securely.
-- [ ] Export a sanitized workflow into `workflows/`.
-- [ ] Document how to import and execute it.
-- [ ] Test failures and retries.
+- [x] Run n8n locally.
+- [x] Design the workflow boundaries.
+- [x] Connect n8n to the backend using authenticated webhooks.
+- [x] Validate every incoming webhook payload.
+- [x] Handle duplicate deliveries.
+- [x] Store credentials securely.
+- [x] Export a sanitized workflow into `workflows/`.
+- [x] Document how to import and execute it.
+- [x] Test failures and retries.
 
 Keep critical business rules in the backend. Use n8n for orchestration and integrations where it provides a clear benefit.
 

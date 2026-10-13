@@ -1,0 +1,223 @@
+{
+  "name": "B2B Lead Intake & AI Automation Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Incoming Lead Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "b2b-lead-intake-trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/webhooks/n8n/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "={{ $env.WEBHOOK_SECRET || 'dev-webhook-secret-change-in-production' }}"
+            },
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.body.email }}-{{ $now.toFormat('yyyyMMdd') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "name": "Send to Backend Gateway",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.data.category }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "high_fit",
+              "output": 0
+            },
+            {
+              "value2": "medium_fit",
+              "output": 1
+            }
+          ]
+        },
+        "fallbackOutput": 2
+      },
+      "name": "Route by Category",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "notice": "High fit lead detected. Dispatching urgent sales alert.",
+        "values": {
+          "string": [
+            {
+              "name": "channel",
+              "value": "#sales-urgent-leads"
+            },
+            {
+              "name": "message",
+              "value": "🚨 High-Fit Lead Alert: {{ $json.data.name }} (Score: {{ $json.data.fitScore }}). Action: {{ $json.data.recommendedAction }}"
+            }
+          ]
+        }
+      },
+      "name": "Dispatch Sales Team Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 200]
+    },
+    {
+      "parameters": {
+        "notice": "Medium fit lead. Enqueue marketing info packet.",
+        "values": {
+          "string": [
+            {
+              "name": "campaign",
+              "value": "nurture-series-v1"
+            },
+            {
+              "name": "message",
+              "value": "Enqueue marketing information packet for {{ $json.data.email }}"
+            }
+          ]
+        }
+      },
+      "name": "Enqueue Marketing Nurture",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 320]
+    },
+    {
+      "parameters": {
+        "notice": "Low fit or unqualified lead. Record for archive.",
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "archived"
+            }
+          ]
+        }
+      },
+      "name": "Archive Unqualified Lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 440]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, leadId: $json.data.id, status: $json.data.status, category: $json.data.category }) }}",
+        "options": {}
+      },
+      "name": "Respond to Webhook Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1160, 300]
+    }
+  ],
+  "connections": {
+    "Incoming Lead Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send to Backend Gateway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Backend Gateway": {
+      "main": [
+        [
+          {
+            "node": "Route by Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Category": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Sales Team Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enqueue Marketing Nurture",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Archive Unqualified Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Sales Team Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enqueue Marketing Nurture": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archive Unqualified Lead": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

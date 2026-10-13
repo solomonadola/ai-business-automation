@@ -5,6 +5,7 @@ import Fastify, {
 import { AppError } from "./http/errors.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerLeadRoutes } from "./routes/leads.js";
+import { registerWebhookRoutes } from "./routes/webhooks.js";
 
 interface HttpErrorLike {
   statusCode: number;
@@ -74,6 +75,7 @@ export function buildApp(opts: FastifyServerOptions = {}): FastifyInstance {
   // Register routes
   void app.register(registerHealthRoutes);
   void app.register(registerLeadRoutes);
+  void app.register(registerWebhookRoutes);
 
   return app;
 }

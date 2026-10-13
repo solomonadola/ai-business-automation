@@ -16,6 +16,14 @@ const envSchema = z.object({
     .default(
       "postgres://postgres:postgres@localhost:5432/ai_business_automation",
     ),
+  WEBHOOK_SECRET: z
+    .string()
+    .min(1)
+    .default("dev-webhook-secret-change-in-production"),
+  N8N_WEBHOOK_URL: z
+    .string()
+    .url()
+    .default("http://localhost:5678/webhook/leads"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
