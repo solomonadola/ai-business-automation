@@ -29,6 +29,7 @@ export interface LeadRepository {
   createOrGetByIdempotencyKey(data: NewLeadRecord): Promise<CreateLeadResult>;
   findById(id: string): Promise<LeadRecord | null>;
   findByEmail(email: string): Promise<LeadRecord[]>;
+  findRecentLeads(limit?: number): Promise<LeadRecord[]>;
   findFailedLeads(): Promise<LeadRecord[]>;
   updateStatus(
     id: string,
@@ -116,6 +117,16 @@ export class PgLeadRepository implements LeadRepository {
       .from(leadsTable)
       .where(eq(leadsTable.email, email))
       .orderBy(desc(leadsTable.createdAt));
+
+    return rows.map((r) => this.mapToRecord(r));
+  }
+
+  public async findRecentLeads(limit: number = 20): Promise<LeadRecord[]> {
+    const rows = await this.database
+      .select()
+      .from(leadsTable)
+      .orderBy(desc(leadsTable.createdAt))
+      .limit(limit);
 
     return rows.map((r) => this.mapToRecord(r));
   }

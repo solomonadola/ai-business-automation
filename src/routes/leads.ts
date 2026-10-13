@@ -35,7 +35,21 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // 2. List Failed Leads for Investigation
+  // 2. List Recent Leads
+  app.get(
+    "/api/leads",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const leads = await leadService.getRecentLeads(25);
+      return reply.status(200).send({
+        success: true,
+        data: leads,
+        count: leads.length,
+        correlationId: request.id,
+      });
+    },
+  );
+
+  // 3. List Failed Leads for Investigation
   app.get(
     "/api/leads/failed",
     async (request: FastifyRequest, reply: FastifyReply) => {

@@ -129,6 +129,10 @@ export class LeadService {
     return this.repository.findById(id);
   }
 
+  public async getRecentLeads(limit = 20): Promise<LeadRecord[]> {
+    return this.repository.findRecentLeads(limit);
+  }
+
   private resolveIdempotencyKey(
     email: string,
     message: string,

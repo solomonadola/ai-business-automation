@@ -43,3 +43,4 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
   CMD node -e "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
 CMD ["node", "dist/index.js"]
+

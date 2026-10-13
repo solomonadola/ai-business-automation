@@ -10,6 +10,7 @@ import { getLoggerConfig, LOG_REDACT_PATHS } from "./observability/logger.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerLeadRoutes } from "./routes/leads.js";
 import { registerWebhookRoutes } from "./routes/webhooks.js";
+import { registerUiRoutes } from "./routes/ui.js";
 
 export interface AppOptions extends FastifyServerOptions {
   rateLimit?: RateLimitPluginOptions | false;
@@ -70,7 +71,14 @@ export function buildApp(opts: AppOptions = {}): FastifyInstance {
 
   // Register security headers (Helmet)
   void app.register(helmet, {
-    contentSecurityPolicy: true,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+      },
+    },
     frameguard: { action: "deny" },
   });
 
@@ -145,6 +153,7 @@ export function buildApp(opts: AppOptions = {}): FastifyInstance {
   });
 
   // Register routes
+  void app.register(registerUiRoutes);
   void app.register(registerHealthRoutes);
   void app.register(registerLeadRoutes);
   void app.register(registerWebhookRoutes);
