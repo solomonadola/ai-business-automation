@@ -1,8 +1,10 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { leadService } from "../services/lead.service.js";
+import { leadOrchestratorService } from "../services/lead-orchestrator.service.js";
 import { NotFoundError } from "../http/errors.js";
 
 export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
+  // 1. Lead Intake
   app.post(
     "/api/leads",
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -33,6 +35,22 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // 2. List Failed Leads for Investigation
+  app.get(
+    "/api/leads/failed",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const failedLeads = await leadOrchestratorService.getFailedLeads();
+
+      return reply.status(200).send({
+        success: true,
+        data: failedLeads,
+        count: failedLeads.length,
+        correlationId: request.id,
+      });
+    },
+  );
+
+  // 3. Inspect Single Lead by ID
   app.get(
     "/api/leads/:id",
     async (
@@ -54,6 +72,7 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // 4. Trigger Classification Step
   app.post(
     "/api/leads/:id/classify",
     async (
@@ -66,6 +85,61 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(200).send({
         success: true,
         data: classifiedLead,
+        correlationId: request.id,
+      });
+    },
+  );
+
+  // 5. Trigger Full Workflow Execution (Intake -> Classification -> Notification -> Complete)
+  app.post(
+    "/api/leads/:id/process",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply,
+    ) => {
+      const { id } = request.params;
+      const processedLead =
+        await leadOrchestratorService.processLeadWorkflow(id);
+
+      return reply.status(200).send({
+        success: true,
+        data: processedLead,
+        correlationId: request.id,
+      });
+    },
+  );
+
+  // 6. Retry Failed Lead Workflow
+  app.post(
+    "/api/leads/:id/retry",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply,
+    ) => {
+      const { id } = request.params;
+      const retriedLead = await leadOrchestratorService.retryFailedLead(id);
+
+      return reply.status(200).send({
+        success: true,
+        data: retriedLead,
+        correlationId: request.id,
+      });
+    },
+  );
+
+  // 7. Inspect Lead Workflow Audit Attempts
+  app.get(
+    "/api/leads/:id/history",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply,
+    ) => {
+      const { id } = request.params;
+      const history = await leadOrchestratorService.getWorkflowHistory(id);
+
+      return reply.status(200).send({
+        success: true,
+        data: history,
         correlationId: request.id,
       });
     },

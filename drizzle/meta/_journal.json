@@ -15,6 +15,13 @@
       "when": 1791882184038,
       "tag": "0001_old_bloodscream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791882941570,
+      "tag": "0002_nostalgic_ma_gnuci",
+      "breakpoints": true
     }
   ]
 }

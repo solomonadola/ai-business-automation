@@ -38,6 +38,10 @@ export interface LeadRecord extends NormalizedLead {
   reasoningSummary?: string;
   failureReason?: string;
   classifiedAt?: string;
+  notificationSent: boolean;
+  notificationMessageId?: string;
+  notificationSentAt?: string;
+  processingAttempts: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,4 +58,15 @@ export interface NewLeadRecord {
 export interface ValidationErrorDetail {
   field: string;
   message: string;
+}
+
+export interface WorkflowAttemptRecord {
+  id: string;
+  leadId: string;
+  step: "intake" | "classification" | "notification" | "workflow";
+  attemptNumber: number;
+  status: "success" | "failed" | "retrying";
+  errorMessage?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
 }

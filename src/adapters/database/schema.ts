@@ -5,6 +5,8 @@ import {
   text,
   timestamp,
   integer,
+  boolean,
+  jsonb,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -27,6 +29,12 @@ export const leadsTable = pgTable(
     reasoningSummary: text("reasoning_summary"),
     failureReason: text("failure_reason"),
     classifiedAt: timestamp("classified_at", { withTimezone: true }),
+    notificationSent: boolean("notification_sent").default(false).notNull(),
+    notificationMessageId: varchar("notification_message_id", { length: 128 }),
+    notificationSentAt: timestamp("notification_sent_at", {
+      withTimezone: true,
+    }),
+    processingAttempts: integer("processing_attempts").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -39,5 +47,28 @@ export const leadsTable = pgTable(
   ],
 );
 
+export const workflowAttemptsTable = pgTable(
+  "workflow_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leadsTable.id, { onDelete: "cascade" }),
+    step: varchar("step", { length: 32 }).notNull(), // 'classification' | 'notification'
+    attemptNumber: integer("attempt_number").notNull(),
+    status: varchar("status", { length: 32 }).notNull(), // 'success' | 'failed' | 'retrying'
+    errorMessage: text("error_message"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_workflow_attempts_lead_id").on(table.leadId, table.createdAt),
+  ],
+);
+
 export type LeadDbRow = typeof leadsTable.$inferSelect;
 export type NewLeadDbRow = typeof leadsTable.$inferInsert;
+export type WorkflowAttemptDbRow = typeof workflowAttemptsTable.$inferSelect;
+export type NewWorkflowAttemptDbRow = typeof workflowAttemptsTable.$inferInsert;

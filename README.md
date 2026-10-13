@@ -236,16 +236,16 @@ The application accepts only schema-valid AI output. Failed classifications are 
 
 Tasks:
 
-- [ ] Define explicit processing states.
-- [ ] Implement the lead-processing use case.
-- [ ] Add a notification adapter.
-- [ ] Start with a development notification sink or test provider.
-- [ ] Implement bounded retries with backoff.
-- [ ] Distinguish transient and permanent errors.
-- [ ] Record processing attempts.
-- [ ] Prevent duplicate notifications on retries.
-- [ ] Add a way to inspect failed jobs.
-- [ ] Add integration tests for failure recovery.
+- [x] Define explicit processing states.
+- [x] Implement the lead-processing use case.
+- [x] Add a notification adapter.
+- [x] Start with a development notification sink or test provider.
+- [x] Implement bounded retries with backoff.
+- [x] Distinguish transient and permanent errors.
+- [x] Record processing attempts.
+- [x] Prevent duplicate notifications on retries.
+- [x] Add a way to inspect failed jobs.
+- [x] Add integration tests for failure recovery.
 
 Possible states:
 

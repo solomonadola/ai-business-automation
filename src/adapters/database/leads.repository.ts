@@ -1,12 +1,18 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, asc, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { db as defaultDb } from "./client.js";
 import * as schema from "./schema.js";
-import { leadsTable, type LeadDbRow } from "./schema.js";
+import {
+  leadsTable,
+  workflowAttemptsTable,
+  type LeadDbRow,
+  type WorkflowAttemptDbRow,
+} from "./schema.js";
 import type {
   LeadRecord,
   NewLeadRecord,
   LeadProcessingStatus,
+  WorkflowAttemptRecord,
 } from "../../domain/leads/types.js";
 import type {
   LeadClassification,
@@ -23,6 +29,7 @@ export interface LeadRepository {
   createOrGetByIdempotencyKey(data: NewLeadRecord): Promise<CreateLeadResult>;
   findById(id: string): Promise<LeadRecord | null>;
   findByEmail(email: string): Promise<LeadRecord[]>;
+  findFailedLeads(): Promise<LeadRecord[]>;
   updateStatus(
     id: string,
     status: LeadProcessingStatus,
@@ -31,7 +38,16 @@ export interface LeadRepository {
     id: string,
     classification: LeadClassification,
   ): Promise<LeadRecord | null>;
+  updateNotificationSent(
+    id: string,
+    messageId: string,
+  ): Promise<LeadRecord | null>;
   recordFailure(id: string, failureReason: string): Promise<LeadRecord | null>;
+  incrementAttempts(id: string): Promise<number>;
+  recordWorkflowAttempt(
+    data: Omit<WorkflowAttemptRecord, "id" | "createdAt">,
+  ): Promise<WorkflowAttemptRecord>;
+  getWorkflowAttempts(leadId: string): Promise<WorkflowAttemptRecord[]>;
 }
 
 export class PgLeadRepository implements LeadRepository {
@@ -98,7 +114,18 @@ export class PgLeadRepository implements LeadRepository {
     const rows = await this.database
       .select()
       .from(leadsTable)
-      .where(eq(leadsTable.email, email));
+      .where(eq(leadsTable.email, email))
+      .orderBy(desc(leadsTable.createdAt));
+
+    return rows.map((r) => this.mapToRecord(r));
+  }
+
+  public async findFailedLeads(): Promise<LeadRecord[]> {
+    const rows = await this.database
+      .select()
+      .from(leadsTable)
+      .where(eq(leadsTable.status, "failed"))
+      .orderBy(desc(leadsTable.updatedAt));
 
     return rows.map((r) => this.mapToRecord(r));
   }
@@ -140,6 +167,26 @@ export class PgLeadRepository implements LeadRepository {
     return this.mapToRecord(updated[0]);
   }
 
+  public async updateNotificationSent(
+    id: string,
+    messageId: string,
+  ): Promise<LeadRecord | null> {
+    const updated = await this.database
+      .update(leadsTable)
+      .set({
+        status: "completed",
+        notificationSent: true,
+        notificationMessageId: messageId,
+        notificationSentAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(leadsTable.id, id))
+      .returning();
+
+    if (!updated[0]) return null;
+    return this.mapToRecord(updated[0]);
+  }
+
   public async recordFailure(
     id: string,
     failureReason: string,
@@ -156,6 +203,54 @@ export class PgLeadRepository implements LeadRepository {
 
     if (!updated[0]) return null;
     return this.mapToRecord(updated[0]);
+  }
+
+  public async incrementAttempts(id: string): Promise<number> {
+    const updated = await this.database
+      .update(leadsTable)
+      .set({
+        processingAttempts: sql`${leadsTable.processingAttempts} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(leadsTable.id, id))
+      .returning({ attempts: leadsTable.processingAttempts });
+
+    return updated[0]?.attempts ?? 1;
+  }
+
+  public async recordWorkflowAttempt(
+    data: Omit<WorkflowAttemptRecord, "id" | "createdAt">,
+  ): Promise<WorkflowAttemptRecord> {
+    const inserted = await this.database
+      .insert(workflowAttemptsTable)
+      .values({
+        leadId: data.leadId,
+        step: data.step,
+        attemptNumber: data.attemptNumber,
+        status: data.status,
+        errorMessage: data.errorMessage,
+        metadata: data.metadata,
+      })
+      .returning();
+
+    const row = inserted[0];
+    if (!row) {
+      throw new Error("Failed to record workflow attempt");
+    }
+
+    return this.mapAttemptToRecord(row);
+  }
+
+  public async getWorkflowAttempts(
+    leadId: string,
+  ): Promise<WorkflowAttemptRecord[]> {
+    const rows = await this.database
+      .select()
+      .from(workflowAttemptsTable)
+      .where(eq(workflowAttemptsTable.leadId, leadId))
+      .orderBy(asc(workflowAttemptsTable.createdAt));
+
+    return rows.map((r) => this.mapAttemptToRecord(r));
   }
 
   private mapToRecord(row: LeadDbRow): LeadRecord {
@@ -175,8 +270,25 @@ export class PgLeadRepository implements LeadRepository {
       reasoningSummary: row.reasoningSummary ?? undefined,
       failureReason: row.failureReason ?? undefined,
       classifiedAt: row.classifiedAt?.toISOString(),
+      notificationSent: row.notificationSent,
+      notificationMessageId: row.notificationMessageId ?? undefined,
+      notificationSentAt: row.notificationSentAt?.toISOString(),
+      processingAttempts: row.processingAttempts,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private mapAttemptToRecord(row: WorkflowAttemptDbRow): WorkflowAttemptRecord {
+    return {
+      id: row.id,
+      leadId: row.leadId,
+      step: row.step as WorkflowAttemptRecord["step"],
+      attemptNumber: row.attemptNumber,
+      status: row.status as WorkflowAttemptRecord["status"],
+      errorMessage: row.errorMessage ?? undefined,
+      metadata: (row.metadata as Record<string, unknown>) ?? undefined,
+      createdAt: row.createdAt.toISOString(),
     };
   }
 }
