@@ -32,6 +32,25 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai_business_automation_api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/ai_business_automation
+      - WEBHOOK_SECRET=dev-webhook-secret-change-in-production
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/leads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   n8n_data:
