@@ -2,11 +2,7 @@ import { buildApp } from "./app.js";
 import { config } from "./config.js";
 import { closeDatabasePool } from "./adapters/database/client.js";
 
-const app = buildApp({
-  logger: {
-    level: config.NODE_ENV === "test" ? "silent" : "info",
-  },
-});
+const app = buildApp();
 
 async function start(): Promise<void> {
   try {

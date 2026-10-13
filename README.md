@@ -287,17 +287,17 @@ Another developer can reproduce the workflow from the documentation. Exported wo
 
 Tasks:
 
-- [ ] Add structured logging.
-- [ ] Add request or correlation IDs.
-- [ ] Redact secrets and unnecessary personal information.
-- [ ] Validate environment variables at startup.
-- [ ] Add sensible request-size limits and timeouts.
-- [ ] Add rate limiting where appropriate.
-- [ ] Review webhook authentication.
-- [ ] Review database access controls.
-- [ ] Test provider outages and timeout behavior.
-- [ ] Document data retention and deletion.
-- [ ] Review dependencies and enable appropriate security scanning.
+- [x] Add structured logging.
+- [x] Add request or correlation IDs.
+- [x] Redact secrets and unnecessary personal information.
+- [x] Validate environment variables at startup.
+- [x] Add sensible request-size limits and timeouts.
+- [x] Add rate limiting where appropriate.
+- [x] Review webhook authentication.
+- [x] Review database access controls.
+- [x] Test provider outages and timeout behavior.
+- [x] Document data retention and deletion.
+- [x] Review dependencies and enable appropriate security scanning.
 
 **Acceptance criteria:**
 
