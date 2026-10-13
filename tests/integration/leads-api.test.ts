@@ -1,12 +1,20 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterAll, beforeEach } from "vitest";
 import { buildApp } from "../../src/app.js";
 import type { ApiErrorResponse } from "../../src/http/errors.js";
+import { clearLeadsTable } from "../helpers/db.js";
+import { closeDatabasePool } from "../../src/adapters/database/client.js";
 
 describe("POST /api/leads API Integration", () => {
   const app = buildApp({ logger: false });
 
+  beforeEach(async () => {
+    await clearLeadsTable();
+  });
+
   afterAll(async () => {
+    await clearLeadsTable();
     await app.close();
+    await closeDatabasePool();
   });
 
   const validPayload = {
@@ -28,6 +36,7 @@ describe("POST /api/leads API Integration", () => {
     const body = response.json();
 
     expect(body.success).toBe(true);
+    expect(body.isDuplicate).toBe(false);
     expect(body.correlationId).toBeDefined();
     expect(body.data).toMatchObject({
       name: "Jordan Lee",

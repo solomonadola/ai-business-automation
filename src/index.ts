@@ -1,5 +1,6 @@
 import { buildApp } from "./app.js";
 import { config } from "./config.js";
+import { closeDatabasePool } from "./adapters/database/client.js";
 
 const app = buildApp({
   logger: {
@@ -24,6 +25,7 @@ const shutdown = async (signal: string): Promise<void> => {
   app.log.info(`Received ${signal}. Shutting down gracefully...`);
   try {
     await app.close();
+    await closeDatabasePool();
     process.exit(0);
   } catch (err) {
     app.log.error(`Error during shutdown: ${String(err)}`);

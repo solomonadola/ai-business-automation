@@ -10,6 +10,12 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .default(
+      "postgres://postgres:postgres@localhost:5432/ai_business_automation",
+    ),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

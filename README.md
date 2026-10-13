@@ -179,15 +179,15 @@ Valid requests are accepted. Invalid requests return predictable 4xx responses. 
 
 Tasks:
 
-- [ ] Set up PostgreSQL.
-- [ ] Design the database schema.
-- [ ] Add database migrations.
-- [ ] Implement a repository layer.
-- [ ] Store leads and their processing status.
-- [ ] Add a durable deduplication or idempotency strategy.
-- [ ] Test repeated requests.
-- [ ] Test concurrent duplicate submissions.
-- [ ] Handle database failures safely.
+- [x] Set up PostgreSQL.
+- [x] Design the database schema.
+- [x] Add database migrations.
+- [x] Implement a repository layer.
+- [x] Store leads and their processing status.
+- [x] Add a durable deduplication or idempotency strategy.
+- [x] Test repeated requests.
+- [x] Test concurrent duplicate submissions.
+- [x] Handle database failures safely.
 
 **Acceptance criteria:**
 
