@@ -1,3 +1,8 @@
+import type {
+  LeadCategory,
+  RecommendedAction,
+} from "../classification/types.js";
+
 export interface RawLeadInput {
   name?: unknown;
   email?: unknown;
@@ -27,6 +32,12 @@ export interface LeadRecord extends NormalizedLead {
   id: string;
   idempotencyKey: string;
   status: LeadProcessingStatus;
+  fitScore?: number;
+  category?: LeadCategory;
+  recommendedAction?: RecommendedAction;
+  reasoningSummary?: string;
+  failureReason?: string;
+  classifiedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

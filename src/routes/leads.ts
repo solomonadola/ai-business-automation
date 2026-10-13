@@ -53,4 +53,21 @@ export async function registerLeadRoutes(app: FastifyInstance): Promise<void> {
       });
     },
   );
+
+  app.post(
+    "/api/leads/:id/classify",
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply,
+    ) => {
+      const { id } = request.params;
+      const classifiedLead = await leadService.classifyLead(id);
+
+      return reply.status(200).send({
+        success: true,
+        data: classifiedLead,
+        correlationId: request.id,
+      });
+    },
+  );
 }

@@ -4,6 +4,7 @@ import {
   varchar,
   text,
   timestamp,
+  integer,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -20,6 +21,12 @@ export const leadsTable = pgTable(
     website: varchar("website", { length: 255 }),
     message: text("message").notNull(),
     status: varchar("status", { length: 32 }).notNull().default("received"),
+    fitScore: integer("fit_score"),
+    category: varchar("category", { length: 32 }),
+    recommendedAction: varchar("recommended_action", { length: 32 }),
+    reasoningSummary: text("reasoning_summary"),
+    failureReason: text("failure_reason"),
+    classifiedAt: timestamp("classified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

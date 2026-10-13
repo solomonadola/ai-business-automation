@@ -214,17 +214,17 @@ Use controlled categories and actions rather than unrestricted model-generated c
 
 Tasks:
 
-- [ ] Create a provider-independent `LeadClassifier` interface.
-- [ ] Define a structured output schema.
-- [ ] Implement the LLM provider adapter.
-- [ ] Write and version the classification prompt.
-- [ ] Validate the returned output at runtime.
-- [ ] Handle timeouts and rate limits.
-- [ ] Handle malformed or invalid model output.
-- [ ] Add configurable retry limits.
-- [ ] Add cost and token limits.
-- [ ] Create deterministic mock-based tests.
-- [ ] Keep API keys on the server.
+- [x] Create a provider-independent `LeadClassifier` interface.
+- [x] Define a structured output schema.
+- [x] Implement the LLM provider adapter.
+- [x] Write and version the classification prompt.
+- [x] Validate the returned output at runtime.
+- [x] Handle timeouts and rate limits.
+- [x] Handle malformed or invalid model output.
+- [x] Add configurable retry limits.
+- [x] Add cost and token limits.
+- [x] Create deterministic mock-based tests.
+- [x] Keep API keys on the server.
 
 **Acceptance criteria:**
 
