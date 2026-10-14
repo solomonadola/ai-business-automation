@@ -667,3 +667,218 @@ curl -X POST http://localhost:3000/api/leads/e4b3c2a1-0000-4000-8000-00000000000
 
 - **Trade-off**: Writing custom fetch-based adapters (`OpenAiCompatibleClassifier`, `MockLeadClassifier`) rather than pulling large SDK frameworks (LangChain / LlamaIndex).
 - **Rationale**: Minimal attack surface, zero extraneous dependencies, predictable token spend, and standard `AbortController` timeouts. The default test suite achieves 100% test coverage deterministically without external network calls or paid API keys.
+
+---
+
+## 17. End-to-End Testing & Automation Verification Playbook
+
+This playbook provides a complete walkthrough to test every component of the platform locally and verify whether each automation step is working.
+
+```mermaid
+flowchart LR
+    A["1. Intake & Idempotency<br/>(Web UI / API)"] --> B["2. Database Persistence<br/>(PostgreSQL 16)"]
+    B --> C["3. AI Classification<br/>(Fit Scoring)"]
+    C --> D["4. State Machine & Audit<br/>(workflow_attempts)"]
+    D --> E["5. n8n Visual Automation<br/>(Authenticated Webhook)"]
+```
+
+---
+
+### Step 1: Confirm Running Services
+
+Verify that all three Docker containers are running and healthy:
+
+```bash
+docker compose ps
+```
+
+You should see:
+
+- `ai_business_automation_api`: Running on `http://localhost:3000` (healthy)
+- `ai_business_automation_n8n`: Running on `http://localhost:5678`
+- `ai_business_automation_postgres`: Running on `localhost:5432` (healthy)
+
+---
+
+### Step 2: Test via the Web Dashboard UI (`http://localhost:3000`)
+
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+
+1. **Test Lead Intake**:
+   - Click the **"High Fit Sample"** button on the left card (auto-fills prospect Jordan Lee).
+   - Click the blue **"Submit Lead"** button.
+   - **Verification**:
+     - A green banner confirms: `✅ Lead Created: Successfully persisted to PostgreSQL`.
+     - A new row appears in the pipeline table on the right with status `RECEIVED`.
+
+2. **Test Idempotency & Deduplication**:
+   - Without changing any fields, click **"Submit Lead"** a second time.
+   - **Verification**:
+     - A yellow banner appears: `⚡ Idempotent Replay: Duplicate submission detected! Existing lead returned with 0 side-effects`.
+     - Check the table on the right: **no duplicate row is created**.
+
+3. **Test AI Classification & State Machine**:
+   - In the pipeline table, click the blue **"⚡ Process"** button on Jordan's row.
+   - **Verification**:
+     - Status updates live from `RECEIVED` ➔ `CLASSIFYING` ➔ `COMPLETED`.
+     - The **AI Fit Meter** displays `85 (high_fit)` with a green progress bar.
+     - The **Action Recommended** pill displays `schedule_follow_up`.
+
+4. **Test Audit Trail & History**:
+   - Click the gray **"📜 Audit"** button on Jordan's row.
+   - **Verification**:
+     - A modal appears showing all steps durably recorded in PostgreSQL:
+       - **Step 1: CLASSIFICATION** (Attempt #1, `success`, fit score metadata).
+       - **Step 2: NOTIFICATION** (Attempt #1, `success`, message delivery ID).
+
+---
+
+### Step 3: Test the n8n Visual Workflow (`http://localhost:5678`)
+
+The platform includes a pre-built, sanitized visual workflow in [`workflows/lead-automation-workflow.json`](workflows/lead-automation-workflow.json).
+
+1. **Open n8n in Your Browser**:
+   Navigate to **[http://localhost:5678](http://localhost:5678)**. Complete the one-time owner setup (or skip).
+
+2. **Import the Workflow**:
+   - In the n8n top-left menu, click **Workflows** ➔ **Import from File**.
+   - Select the file [`workflows/lead-automation-workflow.json`](workflows/lead-automation-workflow.json).
+   - The visual canvas will render the 7 nodes:
+     $$\text{Webhook Trigger} \longrightarrow \text{Backend Gateway} \longrightarrow \text{Category Router} \longrightarrow \text{Sales Alert}$$
+
+3. **Activate the Workflow**:
+   - Toggle the switch in the upper-right corner to **Active** (or click **"Test workflow"** to listen for a single event).
+
+4. **Trigger the n8n Event via curl**:
+   In your terminal, send a lead directly to the n8n webhook:
+
+   ```bash
+   curl -i -X POST http://localhost:5678/webhook/leads \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Jane Doe",
+       "email": "jane@enterprise.com",
+       "company": "Enterprise Corp",
+       "website": "https://enterprise.com",
+       "message": "Urgent need for automated sales operations and lead classification."
+     }'
+   ```
+
+5. **How to Verify it Worked in n8n**:
+   - In n8n, click **Executions** on the left navigation bar.
+   - You will see a green checkmark execution.
+   - Click it to view the active path highlighted in green across the canvas:
+     - `Incoming Lead Webhook` received the JSON payload.
+     - `Send to Backend Gateway` forwarded it with the timing-safe `X-Webhook-Secret`.
+     - `Route by Category` matched `high_fit`.
+     - `Dispatch Sales Alert` dispatched the notification.
+   - Refresh your Web Dashboard at **[http://localhost:3000](http://localhost:3000)**: Jane Doe will now appear in PostgreSQL!
+
+---
+
+### Step 4: Test Inbound Webhook Security (Timing-Safe Auth)
+
+Test the backend webhook endpoint directly to verify authentication and timing attack protections:
+
+1. **Authorized Request (Valid Secret)**:
+
+   ```bash
+   curl -i -X POST http://localhost:3000/api/webhooks/n8n/leads \
+     -H "Content-Type: application/json" \
+     -H "X-Webhook-Secret: dev-webhook-secret-change-in-production" \
+     -d '{
+       "name": "Taylor Swift",
+       "email": "taylor@music.com",
+       "message": "Production automation inquiry."
+     }'
+   ```
+
+   _Expected Response_: `HTTP/1.1 200 OK` with JSON `{ "success": true, "status": "completed" }`.
+
+2. **Unauthorized Request (Invalid Secret)**:
+   ```bash
+   curl -i -X POST http://localhost:3000/api/webhooks/n8n/leads \
+     -H "Content-Type: application/json" \
+     -H "X-Webhook-Secret: wrong-secret-token" \
+     -d '{
+       "name": "Attacker",
+       "email": "attacker@evil.com",
+       "message": "Unauthorized payload."
+     }'
+   ```
+   _Expected Response_: `HTTP/1.1 401 Unauthorized` with `{ "error": { "code": "UNAUTHORIZED" } }`.
+
+---
+
+### Step 5: Verify the Database (PostgreSQL Inspection)
+
+Verify that data is correctly and safely persisted in PostgreSQL:
+
+1. **Inspect Leads Table**:
+
+   ```bash
+   docker compose exec postgres psql -U postgres -d ai_business_automation -c \
+     "SELECT id, name, email, status, fit_score, category, notification_sent FROM leads;"
+   ```
+
+2. **Inspect Immutable Audit Trail (`workflow_attempts`)**:
+   ```bash
+   docker compose exec postgres psql -U postgres -d ai_business_automation -c \
+     "SELECT lead_id, step, attempt_number, status, metadata FROM workflow_attempts;"
+   ```
+
+---
+
+### Step 6: Verify Structured Logging & Sensitive Data Redaction
+
+View the live structured JSON logs emitted by Fastify and Pino:
+
+```bash
+docker compose logs api --tail=30
+```
+
+**Verification Checklist**:
+
+- Every request contains a unique `reqId` UUID correlation ID.
+- Request method, URL, and response time metrics are recorded in milliseconds.
+- Sensitive headers (`authorization`, `x-webhook-secret`, `cookie`) and keys (`apiKey`, `password`, `token`) are automatically censored to `"[REDACTED]"`.
+
+---
+
+### Step 7: Test Fault Tolerance, Failure Triage & Retries
+
+1. **Input Validation Rejection (`400 BAD_REQUEST`)**:
+
+   ```bash
+   curl -i -X POST http://localhost:3000/api/leads \
+     -H "Content-Type: application/json" \
+     -d '{"name": "No Email", "message": "Missing email field"}'
+   ```
+
+   _Expected Response_: `HTTP/1.1 400 Bad Request` with `VALIDATION_ERROR` detailing the missing email.
+
+2. **Request Payload Cap (`413 PAYLOAD_TOO_LARGE`)**:
+   Payloads exceeding 100 KB are automatically rejected with `HTTP 413` to protect memory.
+
+3. **Inspect Failed Leads Queue**:
+
+   ```bash
+   curl -s http://localhost:3000/api/leads/failed | jq .
+   ```
+
+4. **Retry a Failed Lead**:
+   ```bash
+   curl -i -X POST http://localhost:3000/api/leads/<LEAD_ID>/retry
+   ```
+
+---
+
+### Step 8: Run the Automated Test Suite
+
+Run the full automated test suite containing 56 unit and integration tests:
+
+```bash
+npm test
+```
+
+_Expected output_: `56 passed (56)` across 10 test files with 100% test pass rate.
