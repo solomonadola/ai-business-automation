@@ -192,11 +192,15 @@ function getDashboardHtml(): string {
       overflow-y: auto; padding: 24px;
     }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.25rem; cursor: pointer; }
-    .timeline-item { padding: 12px; background: #0f172a; border-left: 3px solid var(--primary); border-radius: 4px; margin-bottom: 10px; font-size: 0.8rem; }
+      .timeline-item { padding: 12px; background: #0f172a; border-left: 3px solid var(--primary); border-radius: 4px; margin-bottom: 10px; font-size: 0.8rem; }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
+  <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 420px; pointer-events: none;"></div>
 
   <div class="header">
     <div class="header-title">
@@ -258,10 +262,9 @@ function getDashboardHtml(): string {
             </div>
           </div>
 
+          <div id="formAlert" class="alert" style="margin-bottom: 14px; margin-top: 0;"></div>
           <button type="submit" class="btn btn-primary" id="submitBtn">Submit Lead (POST /api/leads)</button>
         </form>
-
-        <div id="formAlert" class="alert"></div>
       </div>
     </div>
 
@@ -326,6 +329,39 @@ function getDashboardHtml(): string {
       randomizeKey();
     }
 
+    function showToast(title, message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      const isWarn = type === 'warning';
+      const isErr = type === 'error';
+      const isInfo = type === 'info';
+      const borderCol = isWarn ? '#f59e0b' : (isErr ? '#ef4444' : (isInfo ? '#3b82f6' : '#10b981'));
+      const bgCol = isWarn ? 'rgba(180, 83, 9, 0.95)' : (isErr ? 'rgba(185, 28, 28, 0.95)' : (isInfo ? 'rgba(30, 41, 59, 0.95)' : 'rgba(6, 95, 70, 0.95)'));
+      toast.style.cssText = \`
+        background: \${bgCol};
+        border: 1px solid \${borderCol};
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        font-size: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        pointer-events: auto;
+        animation: slideIn 0.3s ease-out;
+        transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+      \`;
+      toast.innerHTML = \`<div style="font-weight:700; display:flex; justify-content:space-between; align-items:center;"><span>\${title}</span><button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;margin-left:8px;">&times;</button></div><div style="font-size:0.775rem; opacity:0.95;">\${message}</div>\`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
     async function handleLeadSubmit(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submitBtn');
@@ -359,20 +395,25 @@ function getDashboardHtml(): string {
           if (data.isDuplicate) {
             alertBox.className = 'alert alert-warning';
             alertBox.innerHTML = '<strong>⚡ Idempotent Replay:</strong> Duplicate submission detected! Existing lead returned with 0 side-effects.';
+            showToast('⚡ Duplicate Detected', 'Existing lead returned without creating duplicate database rows.', 'warning');
           } else {
             alertBox.className = 'alert alert-success';
             alertBox.innerHTML = '<strong>✅ Lead Created:</strong> Successfully persisted to PostgreSQL. Status: <code>' + data.data.status + '</code>';
+            showToast('✅ Lead Created Successfully!', 'Persisted to PostgreSQL in RECEIVED status.', 'success');
           }
+          alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           loadLeads();
         } else {
           alertBox.style.display = 'block';
           alertBox.className = 'alert alert-error';
           alertBox.innerText = data.error?.message || 'Error creating lead';
+          showToast('❌ Submission Failed', data.error?.message || 'Error creating lead', 'error');
         }
       } catch (err) {
         alertBox.style.display = 'block';
         alertBox.className = 'alert alert-error';
         alertBox.innerText = 'Network error: ' + err.message;
+        showToast('❌ Network Error', err.message, 'error');
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = 'Submit Lead (POST /api/leads)';
@@ -433,15 +474,17 @@ function getDashboardHtml(): string {
 
     async function processLead(id) {
       try {
+        showToast('⚙️ Processing Lead...', 'Evaluating AI Fit Score and routing sales notification...', 'info');
         const res = await fetch(\`/api/leads/\${id}/process\`, { method: 'POST' });
         const json = await res.json();
         if (res.ok) {
+          showToast('🎉 Lead Processed!', \`Score: \${json.data.fitScore}/100 (\${json.data.category}) • Action: \${json.data.recommendedAction}\`, 'success');
           loadLeads();
         } else {
-          alert('Process failed: ' + (json.error?.message || 'Unknown error'));
+          showToast('❌ Process Failed', json.error?.message || 'Unknown error', 'error');
         }
       } catch (err) {
-        alert('Network error: ' + err.message);
+        showToast('❌ Network Error', err.message, 'error');
       }
     }
 
