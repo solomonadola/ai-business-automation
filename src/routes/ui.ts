@@ -7,7 +7,7 @@ export async function registerUiRoutes(app: FastifyInstance): Promise<void> {
     if (accept.includes("application/json") && !accept.includes("text/html")) {
       return reply.send({
         name: "ai-business-automation",
-        version: "1.0.0",
+        version: "0.1.0",
         description: "AI Business Automation Platform API",
         health: "/health",
         leads: "/api/leads",
@@ -16,7 +16,12 @@ export async function registerUiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const html = getDashboardHtml();
-    return reply.type("text/html; charset=utf-8").send(html);
+    return reply
+      .header("Cache-Control", "no-cache, no-store, must-revalidate")
+      .header("Pragma", "no-cache")
+      .header("Expires", "0")
+      .type("text/html; charset=utf-8")
+      .send(html);
   });
 }
 
@@ -220,15 +225,15 @@ function getDashboardHtml(): string {
       <div class="card">
         <div class="card-title">
           <span>Submit Inbound Lead</span>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Step 1: Intake</span>
+          <button type="button" class="btn btn-sm" onclick="quickTestLead()" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; border: none; box-shadow: 0 2px 8px rgba(16,185,129,0.3); cursor: pointer;">🚀 1-Click Test Lead</button>
         </div>
 
         <div class="samples-row">
-          <button class="btn btn-sample btn-sm" onclick="fillSample('high')">High Fit Sample</button>
-          <button class="btn btn-sample btn-sm" onclick="fillSample('med')">Medium Fit Sample</button>
+          <button type="button" class="btn btn-sample btn-sm" onclick="fillSample('high')">High Fit Sample</button>
+          <button type="button" class="btn btn-sample btn-sm" onclick="fillSample('med')">Medium Fit Sample</button>
         </div>
 
-        <form id="leadForm" onsubmit="handleLeadSubmit(event)">
+        <form id="leadForm" novalidate onsubmit="handleLeadSubmit(event)">
           <div class="form-group">
             <label for="name">Prospect Name *</label>
             <input type="text" id="name" required placeholder="e.g. Jordan Lee" value="Jordan Lee">
@@ -246,7 +251,7 @@ function getDashboardHtml(): string {
 
           <div class="form-group">
             <label for="website">Company Website</label>
-            <input type="url" id="website" placeholder="https://example.com" value="https://example.com">
+            <input type="text" id="website" placeholder="https://example.com" value="https://example.com">
           </div>
 
           <div class="form-group">
@@ -327,6 +332,17 @@ function getDashboardHtml(): string {
         document.getElementById('message').value = 'Just curious about your pricing and features.';
       }
       randomizeKey();
+    }
+
+    function quickTestLead() {
+      const num = Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('name').value = 'Test Prospect ' + num;
+      document.getElementById('email').value = 'prospect' + num + '@enterprise.com';
+      document.getElementById('company').value = 'Enterprise AI Corp';
+      document.getElementById('website').value = 'https://enterprise.example.com';
+      document.getElementById('message').value = 'Urgent: We have 200 sales reps and need automated AI lead scoring and n8n webhook notifications.';
+      randomizeKey();
+      document.getElementById('submitBtn').click();
     }
 
     function showToast(title, message, type = 'success') {
