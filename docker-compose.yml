@@ -31,6 +31,7 @@ services:
       - GENERIC_TIMEZONE=UTC
       - WEBHOOK_SECRET=dev-webhook-secret-change-in-production
       - BACKEND_URL=http://api:3000/api/webhooks/n8n/leads
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
       - n8n_data:/home/node/.n8n
 
