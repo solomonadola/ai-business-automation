@@ -29,14 +29,13 @@ Per the project design principles, **business logic remains in the TypeScript ba
 
 1. In the n8n dashboard, open the menu (top left) and click **Workflows** -> **Import from File**.
 2. Select [`workflows/lead-automation-workflow.json`](./lead-automation-workflow.json).
-3. The visual canvas will render the 7 pipeline nodes:
-   - **Incoming Lead Webhook Trigger:** Listens for `POST /webhook/leads`.
+3. The visual canvas will render the 6 pipeline nodes:
+   - **Incoming Lead Webhook Trigger:** Listens for `POST /webhook/leads`. Its **Respond** setting is `When Last Node Finishes`, so the workflow answers the client automatically without a dedicated response node.
    - **Send to Backend Gateway:** Authenticates with `X-Webhook-Secret` and forwards payload to backend `POST /api/webhooks/n8n/leads`.
    - **Route by Category:** Evaluates `$json.data.category` (`high_fit`, `medium_fit`, `low_fit`).
    - **Dispatch Sales Alert:** Routes high-fit leads to sales channels.
    - **Enqueue Marketing Nurture:** Routes medium-fit leads to nurture campaigns.
    - **Archive Unqualified:** Archives low-fit/spam inquiries.
-   - **Respond to Webhook Client:** Returns confirmation to caller.
 
 ---
 
