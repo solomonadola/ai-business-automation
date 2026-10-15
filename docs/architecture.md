@@ -34,7 +34,7 @@ flowchart TD
     end
 
     subgraph ExternalAdapters ["External Services & Adapters"]
-        LLM["AI Classifier Adapter<br/>(OpenAI / Mock / Anthropic)<br/>Prompt v1.0.0 + Zod Validation"]
+        LLM["AI Classifier Adapter<br/>(OpenAI-compatible: OpenAI / Gemini / Groq / Ollama / Mock)<br/>Prompt v1.0.0 + Zod Validation"]
         n8n["n8n Workflow Engine<br/>Authenticated Webhook<br/>HMAC-SHA256 Signature"]
     end
 
@@ -129,6 +129,7 @@ sequenceDiagram
 ### 4.4 AI Classification Layer (`src/domain/classification/`, `src/adapters/llm/`)
 
 - **Provider-Independent Interface (`LeadClassifier`)**: Decouples application logic from specific LLM providers.
+- **Config-Driven Factory (`classifier.factory.ts`)**: Selects the active provider at startup via `LLM_PROVIDER`. `mock` (default) is deterministic for CI; `openai` targets any OpenAI-compatible endpoint (`OPENAI_BASE_URL` + `OPENAI_MODEL`), including free providers like Google Gemini, Groq, and local Ollama.
 - **Strict Output Parsing (`ClassifierOutputSchema`)**: LLM output is treated as untrusted data. Responses are validated against strict Zod schemas with controlled category and action enums.
 - **Safety Controls**: Prompt versioning (`v1.0.0`), token budgets (`maxTokens: 300`), temperature controls (`0.2`), and `AbortController` timeouts (10s max).
 

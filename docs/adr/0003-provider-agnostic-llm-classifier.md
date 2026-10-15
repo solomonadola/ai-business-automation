@@ -18,7 +18,7 @@ Integrating Large Language Models carries risks of vendor lock-in, non-determini
    ```
 2. **Untrusted Model Guardrails**:
    - Model output is treated as untrusted input and validated via Zod schema (`ClassifierOutputSchema`).
-   - Categories (`high_fit`, `medium_fit`, `low_fit`, `disqualified`) and actions (`schedule_follow_up`, `send_info_packet`, `route_to_partner`, `nurture_campaign`, `no_action`) are bounded enums.
+   - Categories (`high_fit`, `medium_fit`, `low_fit`, `unqualified`) and actions (`schedule_follow_up`, `send_info_packet`, `route_to_sales`, `archive`) are bounded enums.
    - Any schema mismatch rejects the model output immediately without triggering downstream actions.
 3. **Prompt Versioning**: Classification prompts are centralized and versioned (`v1.0.0`).
 4. **Safety & Cost Controls**:
@@ -30,4 +30,5 @@ Integrating Large Language Models carries risks of vendor lock-in, non-determini
 ## Consequences
 
 - No paid LLM calls occur in the default test suite.
-- Swapping LLM vendors (OpenAI, Anthropic, Ollama, LocalAI) requires only implementing the `LeadClassifier` interface.
+- Swapping LLM vendors (OpenAI, Gemini, Groq, Anthropic, Ollama, LocalAI) requires only configuring `OPENAI_BASE_URL` + `OPENAI_MODEL` — no code changes, since the classifier targets the OpenAI-compatible protocol.
+- Free providers are fully supported: Google Gemini (`https://generativelanguage.googleapis.com/v1beta/openai`, model `gemini-flash-lite-latest`), Groq (`https://api.groq.com/openai/v1`), and local Ollama (`http://localhost:11434/v1`).

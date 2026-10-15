@@ -2,6 +2,8 @@
 
 **A portfolio-grade project demonstrating reliable business automation, full-stack engineering, and practical AI integration.**
 
+> 📖 **Looking for the User Guide?** Check out the [User Manual & Operations Guide](USER_MANUAL.md) for a plain-English walkthrough of the dashboard, AI lead qualification, and step-by-step tutorials.
+
 ## 1. Project Overview
 
 ### The problem
@@ -50,21 +52,21 @@ The goal is not simply to make an AI demo. It is to build a small but credible b
 
 Start with a minimal stack and add dependencies only when necessary.
 
-| Area            | Technology                                      |
-| --------------- | ----------------------------------------------- |
-| Language        | TypeScript with strict mode                     |
-| Runtime         | Supported Node.js LTS                           |
-| Backend         | Fastify or another lightweight HTTP framework   |
-| Validation      | Zod                                             |
-| Database        | PostgreSQL                                      |
-| Testing         | Vitest                                          |
-| Formatting      | Prettier                                        |
-| Linting         | ESLint                                          |
-| AI              | LLM API behind a provider-independent interface |
-| Automation      | n8n                                             |
-| Version control | Git and GitHub                                  |
-| CI/CD           | GitHub Actions                                  |
-| Deployment      | Choose after the local application works        |
+| Area            | Technology                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Language        | TypeScript with strict mode                                                                  |
+| Runtime         | Supported Node.js LTS                                                                        |
+| Backend         | Fastify or another lightweight HTTP framework                                                |
+| Validation      | Zod                                                                                          |
+| Database        | PostgreSQL                                                                                   |
+| Testing         | Vitest                                                                                       |
+| Formatting      | Prettier                                                                                     |
+| Linting         | ESLint                                                                                       |
+| AI              | OpenAI-compatible LLM (OpenAI, Gemini, Groq, Ollama) behind a provider-independent interface |
+| Automation      | n8n                                                                                          |
+| Version control | Git and GitHub                                                                               |
+| CI/CD           | GitHub Actions                                                                               |
+| Deployment      | Choose after the local application works                                                     |
 
 ### Architectural Decisions Recorded
 
@@ -74,6 +76,10 @@ Start with a minimal stack and add dependencies only when necessary.
 - **Database Client: Drizzle ORM with PostgreSQL (Milestone 2+)**
   - _Decision:_ Drizzle ORM with `pg` was chosen over Prisma.
   - _Rationale:_ Zero runtime engine overhead (no heavy Rust binary), transparent SQL execution semantics, full control over transactional idempotency patterns (`ON CONFLICT DO NOTHING`, advisory locks), and reviewable `.sql` migrations via `drizzle-kit`.
+
+- **LLM Provider: OpenAI-compatible interface with a config-driven factory**
+  - _Decision:_ A single `LeadClassifier` interface backed by a factory that selects the active provider via `LLM_PROVIDER`.
+  - _Rationale:_ Any OpenAI-compatible endpoint works with zero code changes by setting `OPENAI_BASE_URL` + `OPENAI_MODEL`. Free options include **Google Gemini** (`gemini-flash-lite-latest`), Groq, and local Ollama. Tests always use the deterministic mock, so CI never makes paid API calls.
 
 Do not introduce Redis, Kafka, Kubernetes, microservices, or vector databases without a demonstrated requirement.
 
@@ -354,8 +360,10 @@ ai-business-automation/
 ├── workflows/
 ├── docs/
 │   ├── architecture.md
-│   ├── threat-model.md
 │   ├── runbook.md
+│   ├── troubleshooting.md
+│   ├── security.md
+│   ├── data-retention.md
 │   └── adr/
 ├── .github/
 │   └── workflows/
@@ -533,6 +541,7 @@ A feature is complete only when:
 
 The complete documentation suite is available under the `docs/` and `workflows/` directories:
 
+- **[Getting Started — Connect, Use & Test](docs/getting-started.md)**: Step-by-step setup, n8n connection, and full test walkthrough.
 - **[System Architecture](docs/architecture.md)**: Detailed component diagrams, sequence flows, and layer responsibilities.
 - **[Operations Runbook](docs/runbook.md)**: Deployment instructions, environment variables, database migrations, and API reference.
 - **[Troubleshooting & Incident Recovery](docs/troubleshooting.md)**: Triage workflows, error codes, failed lead inspection, and recovery procedures.

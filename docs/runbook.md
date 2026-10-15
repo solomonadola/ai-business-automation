@@ -10,14 +10,35 @@ The **AI Business Automation Platform** runs as a containerized or bare-metal No
 
 Configuration is loaded via environment variables and strictly validated at startup using Zod:
 
-| Variable          | Default Value                                                        | Description                                            |
-| ----------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
-| `PORT`            | `3000`                                                               | HTTP port the Fastify server listens on                |
-| `HOST`            | `0.0.0.0`                                                            | Network binding interface                              |
-| `NODE_ENV`        | `development`                                                        | Environment mode (`development`, `test`, `production`) |
-| `DATABASE_URL`    | `postgres://postgres:postgres@localhost:5432/ai_business_automation` | PostgreSQL connection string                           |
-| `WEBHOOK_SECRET`  | `dev-webhook-secret-change-in-production`                            | Secret used for HMAC and timing-safe webhook auth      |
-| `N8N_WEBHOOK_URL` | `http://localhost:5678/webhook/leads`                                | Outbound n8n notification webhook endpoint             |
+| Variable                | Default Value                                                        | Description                                                 |
+| ----------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `PORT`                  | `3000`                                                               | HTTP port the Fastify server listens on                     |
+| `HOST`                  | `0.0.0.0`                                                            | Network binding interface                                   |
+| `NODE_ENV`              | `development`                                                        | Environment mode (`development`, `test`, `production`)      |
+| `DATABASE_URL`          | `postgres://postgres:postgres@localhost:5432/ai_business_automation` | PostgreSQL connection string                                |
+| `WEBHOOK_SECRET`        | `dev-webhook-secret-change-in-production`                            | Secret used for HMAC and timing-safe webhook auth           |
+| `N8N_WEBHOOK_URL`       | `http://localhost:5678/webhook/leads`                                | Outbound n8n notification webhook endpoint                  |
+| `LLM_PROVIDER`          | `mock`                                                               | Classification provider: `mock` (deterministic) \| `openai` |
+| `OPENAI_API_KEY`        | _(empty)_                                                            | API key; required when `LLM_PROVIDER=openai`                |
+| `OPENAI_BASE_URL`       | _(unset, defaults to `https://api.openai.com/v1`)_                   | OpenAI-compatible endpoint (Gemini, Groq, Ollama, etc.)     |
+| `OPENAI_MODEL`          | _(unset, defaults to `gpt-4o-mini`)_                                 | Model name (e.g. `gemini-flash-lite-latest`)                |
+| `NOTIFICATION_PROVIDER` | `in-memory`                                                          | Notification sink: `in-memory` \| `webhook`                 |
+
+### Free LLM providers (Gemini / Groq / Ollama)
+
+Because the classifier speaks the OpenAI-compatible protocol, any provider works by overriding `OPENAI_BASE_URL` and `OPENAI_MODEL`. Example for Google Gemini's free tier (key from <https://aistudio.google.com/app/apikey>):
+
+```dotenv
+LLM_PROVIDER=openai
+OPENAI_API_KEY=AIza...your-gemini-key
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+OPENAI_MODEL=gemini-flash-lite-latest
+```
+
+Groq: `OPENAI_BASE_URL=https://api.groq.com/openai/v1`, `OPENAI_MODEL=llama-3.3-70b-versatile`.
+Ollama (local): `OPENAI_BASE_URL=http://localhost:11434/v1`, `OPENAI_API_KEY=ollama`, `OPENAI_MODEL=llama3.2`.
+
+> Prefer the `-lite` Gemini models (e.g. `gemini-flash-lite-latest`) for classification: the heavier "thinking" models can exhaust the 300-token budget before emitting JSON.
 
 ---
 
