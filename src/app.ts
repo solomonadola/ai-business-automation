@@ -76,6 +76,7 @@ export function buildApp(opts: AppOptions = {}): FastifyInstance {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         imgSrc: ["'self'", "data:"],
       },
     },
