@@ -7,13 +7,13 @@ import {
   type CreateLeadResult,
 } from "../adapters/database/leads.repository.js";
 import type { LeadClassifier } from "../domain/classification/classifier.interface.js";
-import { defaultMockClassifier } from "../adapters/llm/mock-classifier.js";
+import { defaultClassifier } from "../adapters/llm/classifier.factory.js";
 import { ValidationError, NotFoundError, AppError } from "../http/errors.js";
 
 export class LeadService {
   constructor(
     private readonly repository: LeadRepository = defaultLeadRepository,
-    private readonly classifier: LeadClassifier = defaultMockClassifier,
+    private readonly classifier: LeadClassifier = defaultClassifier,
   ) {}
 
   /**

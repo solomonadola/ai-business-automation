@@ -11,7 +11,7 @@ import {
   leadService as defaultLeadService,
 } from "./lead.service.js";
 import { type Notifier } from "../domain/notifications/notifier.interface.js";
-import { defaultNotificationSink } from "../adapters/notifications/in-memory-sink.js";
+import { defaultNotifier } from "../adapters/notifications/notifier.factory.js";
 import {
   executeWithRetry,
   isTransientError,
@@ -23,7 +23,7 @@ export class LeadOrchestratorService {
   constructor(
     private readonly repository: LeadRepository = defaultLeadRepository,
     private readonly leadService: LeadService = defaultLeadService,
-    private readonly notifier: Notifier = defaultNotificationSink,
+    private readonly notifier: Notifier = defaultNotifier,
   ) {}
 
   /**
