@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # Stage 1: Build TypeScript source
 FROM node:22-alpine AS builder
 
@@ -33,6 +31,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 # Copy Drizzle migrations for runtime/startup migration jobs
 COPY drizzle/ ./drizzle/
+# Copy startup entrypoint (runs migrations before starting the server)
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Run as non-privileged node user for container security
 USER node
@@ -42,5 +42,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
   CMD node -e "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]
 

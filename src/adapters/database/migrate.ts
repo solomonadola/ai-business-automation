@@ -8,7 +8,10 @@ export async function runMigrations(): Promise<void> {
 }
 
 // Allow direct CLI execution: tsx src/adapters/database/migrate.ts
-const isMain = process.argv[1]?.endsWith("migrate.ts");
+// or node dist/adapters/database/migrate.js (production image).
+const isMain =
+  process.argv[1]?.endsWith("migrate.ts") ||
+  process.argv[1]?.endsWith("migrate.js");
 if (isMain) {
   runMigrations()
     .then(async () => {
