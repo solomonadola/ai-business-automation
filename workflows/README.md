@@ -42,15 +42,14 @@ Per the project design principles, **business logic remains in the TypeScript ba
 
 ## 4. Configuring Credentials & Secrets
 
-The workflow is **100% sanitized** and contains zero hardcoded tokens.
+The workflow is **100% sanitized** and contains zero hardcoded secrets. Both the backend URL and the webhook secret are injected from n8n environment variables (set automatically by `docker-compose.yml`):
 
-To configure secrets:
+| n8n Env Variable | Purpose                                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `WEBHOOK_SECRET` | Must match the backend's `WEBHOOK_SECRET` for the `X-Webhook-Secret` header.                               |
+| `BACKEND_URL`    | Backend webhook endpoint. Defaults to `http://api:3000/api/webhooks/n8n/leads` (the compose service name). |
 
-- In n8n, set an environment variable or edit the `Send to Backend Gateway` node's `X-Webhook-Secret` header to match your `.env`:
-  ```text
-  X-Webhook-Secret: dev-webhook-secret-change-in-production
-  ```
-- If running n8n in Docker while running the Node backend on your host machine, use `http://host.docker.internal:3000` as the backend URL.
+If you run n8n in Docker while the Node backend runs on your **host** machine (not in Docker), set `BACKEND_URL=http://host.docker.internal:3000/api/webhooks/n8n/leads`.
 
 ---
 
